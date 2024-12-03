@@ -1,186 +1,78 @@
-Assignments - VRV Security
+# Log Analysis System
 
-1. Requests per IP
-This section lists the number of requests made by each IP address.
-IP Address: The IP address from which the requests originated.
-Request Count: The total number of requests made by the IP address.
-2. Most Accessed Endpoint
-This section identifies the endpoint (URL or resource path) that was accessed the most number of times.
-Endpoint: The most frequently accessed resource.
-Access Count: The number of times this endpoint was accessed.
-3. Suspicious Activity
-This section flags IP addresses with suspicious behavior, such as excessive failed login attempts.
-IP Address: The IP address exhibiting suspicious activity.
-Failed Login Count: The total number of failed login attempts from the IP address.
+## Overview
+A robust log analysis tool that processes web server logs to identify patterns, potential security threats, and usage statistics. The system generates both CSV and HTML reports for easy data visualization and analysis.
 
+## Key Features
+- **IP Traffic Analysis**: Tracks and summarizes request frequency per IP address
+- **Endpoint Monitoring**: Identifies the most frequently accessed endpoints
+- **Security Analysis**: Detects suspicious activity based on failed login attempts
+- **Multiple Output Formats**: 
+  - Interactive HTML reports with sortable tables
+  - CSV exports for data processing
+  - Terminal output for quick viewing
 
-Log Analysis Report:
+## Technical Implementation
+- Built in Python using standard libraries and minimal dependencies
+- Implements efficient data processing using Counter collections
+- Uses regex pattern matching for accurate log parsing
+- Generates responsive HTML reports with modern CSS styling
 
-1)Count Requests per IP Address:
+## Sample Output
+The system generates three types of analysis:
 
-    IP Address           Request Count
-    192.168.1.1          69
-    203.0.113.5          8
-    198.51.100.23        8
-    10.0.0.2             6
-    192.168.1.100        5
-2)Identify the Most Frequently Accessed Endpoint:
+1. **Requests Per IP**: Shows traffic distribution across different IP addresses
+2. **Popular Endpoints**: Identifies most accessed URLs/endpoints
+3. **Security Alerts**: Flags IPs with suspicious activity (e.g., multiple failed logins)
 
-   Most Frequently Accessed Endpoint:
-   Endpoint              Access Count
-   /home                 67
-3)Detect Suspicious Activity:
+## Setup and Installation
 
-   Suspicious Activity Detected:
-   IP Address           Failed Login Attempts
+### Prerequisites
+- Python 3.6 or higher
+- Git (optional, for cloning)
 
+### Installation Steps
+1. **Get the Code**:
+   ```
+   # Option 1: Clone with Git
+   git clone https://github.com/vignesh3022/VRV-Security-Python-Intern-Assignment.git
+   cd log-analysis-system
 
-Log_Analaysis.py
+   # Option 2: Download ZIP
+   # Download and extract the ZIP file from the repository
+   ```
 
-import re
-import csv
-from collections import defaultdict, Counter
+2. **Install Dependencies**:
+   ```
+   pip install prettytable
+   ```
 
-LOG_FILE = "sample.log"
-OUTPUT_CSV = "log_analysis_results.csv"
-FAILED_LOGIN_THRESHOLD = 10
+## How to Use
 
-# Function to parse the log file and extract information
-def parse_log(file_path):
-    ip_requests = Counter()
-    endpoint_requests = Counter()
-    failed_login_attempts = defaultdict(int)
+### Input
+- The system processes web server logs in the standard Apache/Nginx format
+- Sample data is provided in `sample.log` for testing and demonstration
+- You can replace `sample.log` with your own log file following the same format
 
-    with open(file_path, 'r') as file:
-        for line in file:
-            # Extract IP address
-            ip_match = re.match(r"(\d+\.\d+\.\d+\.\d+)", line)
-            if not ip_match:
-                continue
-            ip = ip_match.group(1)
+### Processing
+1. Place your log file in the project directory
+2. Run the analysis script:
+   ```
+   python log_analysis.py
+   ```
+3. The script (`log_analysis.py`) processes the log file and performs:
+   - Request frequency analysis
+   - Endpoint usage tracking
+   - Security threat detection
 
-            # Count requests per IP
-            ip_requests[ip] += 1
+### Output Options
+1. **Browser View**: 
+   - Open `log_analysis_report.html` in any web browser or you can use this command in terminal to start the browser: `start log_analysis_report.html`
 
-            # Extract endpoint and status code
-            endpoint_match = re.search(r'"(?:GET|POST|PUT|DELETE) ([^ ]+) HTTP', line)
-            status_code_match = re.search(r'" (\d{3}) ', line)
-            if endpoint_match:
-                endpoint = endpoint_match.group(1)
-                endpoint_requests[endpoint] += 1
+2. **CSV Export**:
+   - Check `log_analysis_results.csv` for raw data
+   - Suitable for further data processing or spreadsheet analysis
 
-            # Check for failed login attempts (401 status or specific message)
-            if status_code_match and int(status_code_match.group(1)) == 401:
-                failed_login_attempts[ip] += 1
-
-    return ip_requests, endpoint_requests, failed_login_attempts
-
-# Analyze results and save to CSV
-def analyze_and_save_results(ip_requests, endpoint_requests, failed_login_attempts):
-    # Sort requests per IP
-    sorted_ip_requests = sorted(ip_requests.items(), key=lambda x: x[1], reverse=True)
-
-    # Find most accessed endpoint
-    most_accessed_endpoint = endpoint_requests.most_common(1)
-
-    # Filter suspicious activity
-    suspicious_ips = {ip: count for ip, count in failed_login_attempts.items() if count > FAILED_LOGIN_THRESHOLD}
-
-    # Display results
-    print("Requests per IP Address:")
-    for ip, count in sorted_ip_requests:
-        print(f"{ip:<20} {count}")
-
-    print("\nMost Frequently Accessed Endpoint:")
-    if most_accessed_endpoint:
-        print(f"{most_accessed_endpoint[0][0]} (Accessed {most_accessed_endpoint[0][1]} times)")
-
-    print("\nSuspicious Activity Detected:")
-    if suspicious_ips:
-        for ip, count in suspicious_ips.items():
-            print(f"{ip:<20} {count}")
-    else:
-        print("No suspicious activity detected.")
-
-    # Save results to CSV
-    with open(OUTPUT_CSV, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-
-        # Write Count Requests per IP Address:
-        writer.writerow(["Count Requests per IP Address:"])
-        writer.writerow(["IP Address", "Request Count"])
-        writer.writerows(sorted_ip_requests)
-
-        # Write Most Accessed Frequently Endpoint:
-        if most_accessed_endpoint:
-            writer.writerow([])
-            writer.writerow(["Most Accessed Frequently Endpoint:"])
-            writer.writerow(["Endpoint", "Access Count"])
-            writer.writerow([most_accessed_endpoint[0][0], most_accessed_endpoint[0][1]])
-
-        # Write Suspicious Activity
-        writer.writerow([])
-        writer.writerow(["Suspicious Activity:"])
-        writer.writerow(["IP Address", "Failed Login Attempts:"])
-        writer.writerows(suspicious_ips.items())
-
-    print(f"\nResults saved to {OUTPUT_CSV}")
-
-# Main function
-if __name__ == "__main__":
-    ip_requests, endpoint_requests, failed_login_attempts = parse_log(LOG_FILE)
-    analyze_and_save_results(ip_requests, endpoint_requests, failed_login_attempts)
-
-Terminal Output:
-
-Requests per IP Address:
-203.0.113.5          8
-198.51.100.23        8
-192.168.1.1          7
-10.0.0.2             6
-192.168.1.100        5
-
-Most Frequently Accessed Endpoint:
-/login (Accessed 13 times)
-
-Suspicious Activity Detected:
-No suspicious activity detected.
-
-Results saved to log_analysis_results.csv
-
-Sample.log
-
-192.168.1.1 - - [03/Dec/2024:10:12:34 +0000] "GET /home HTTP/1.1" 200 512
-203.0.113.5 - - [03/Dec/2024:10:12:35 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:12:36 +0000] "GET /about HTTP/1.1" 200 256
-192.168.1.1 - - [03/Dec/2024:10:12:37 +0000] "GET /contact HTTP/1.1" 200 312
-198.51.100.23 - - [03/Dec/2024:10:12:38 +0000] "POST /register HTTP/1.1" 200 128
-203.0.113.5 - - [03/Dec/2024:10:12:39 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-192.168.1.100 - - [03/Dec/2024:10:12:40 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:12:41 +0000] "GET /dashboard HTTP/1.1" 200 1024
-198.51.100.23 - - [03/Dec/2024:10:12:42 +0000] "GET /about HTTP/1.1" 200 256
-192.168.1.1 - - [03/Dec/2024:10:12:43 +0000] "GET /dashboard HTTP/1.1" 200 1024
-203.0.113.5 - - [03/Dec/2024:10:12:44 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-203.0.113.5 - - [03/Dec/2024:10:12:45 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-192.168.1.100 - - [03/Dec/2024:10:12:46 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:12:47 +0000] "GET /profile HTTP/1.1" 200 768
-192.168.1.1 - - [03/Dec/2024:10:12:48 +0000] "GET /home HTTP/1.1" 200 512
-198.51.100.23 - - [03/Dec/2024:10:12:49 +0000] "POST /feedback HTTP/1.1" 200 128
-203.0.113.5 - - [03/Dec/2024:10:12:50 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-192.168.1.1 - - [03/Dec/2024:10:12:51 +0000] "GET /home HTTP/1.1" 200 512
-198.51.100.23 - - [03/Dec/2024:10:12:52 +0000] "GET /about HTTP/1.1" 200 256
-203.0.113.5 - - [03/Dec/2024:10:12:53 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-192.168.1.100 - - [03/Dec/2024:10:12:54 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:12:55 +0000] "GET /contact HTTP/1.1" 200 512
-198.51.100.23 - - [03/Dec/2024:10:12:56 +0000] "GET /home HTTP/1.1" 200 512
-192.168.1.100 - - [03/Dec/2024:10:12:57 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-203.0.113.5 - - [03/Dec/2024:10:12:58 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:12:59 +0000] "GET /dashboard HTTP/1.1" 200 1024
-192.168.1.1 - - [03/Dec/2024:10:13:00 +0000] "GET /about HTTP/1.1" 200 256
-198.51.100.23 - - [03/Dec/2024:10:13:01 +0000] "POST /register HTTP/1.1" 200 128
-203.0.113.5 - - [03/Dec/2024:10:13:02 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-192.168.1.100 - - [03/Dec/2024:10:13:03 +0000] "POST /login HTTP/1.1" 401 128 "Invalid credentials"
-10.0.0.2 - - [03/Dec/2024:10:13:04 +0000] "GET /profile HTTP/1.1" 200 768
-198.51.100.23 - - [03/Dec/2024:10:13:05 +0000] "GET /about HTTP/1.1" 200 256
-192.168.1.1 - - [03/Dec/2024:10:13:06 +0000] "GET /home HTTP/1.1" 200 512
-198.51.100.23 - - [03/Dec/2024:10:13:07 +0000] "POST /feedback HTTP/1.1" 200 128
+3. **Terminal Output**:
+   - Immediate results displayed in console
+   - Quick overview of key metrics
